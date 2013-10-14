@@ -15,11 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from base58 import b58decode
-from util import dblsha
+from util import dblsha, PoSCoin
+from binascii import unhexlify
 
 def _Address2PKH(addr):
 	try:
-		addr = b58decode(addr, 25)
+		addr = b58decode(addr)
 	except:
 		return None
 	if addr is None:
@@ -34,11 +35,14 @@ def _Address2PKH(addr):
 class BitcoinScript:
 	@classmethod
 	def toAddress(cls, addr):
-		d = _Address2PKH(addr)
-		if not d:
-			raise ValueError('invalid address')
-		(ver, pubkeyhash) = d
-		return b'\x76\xa9\x14' + pubkeyhash + b'\x88\xac'
+		if PoSCoin:
+			return b'\x21' + unhexlify(addr) + b'\xac'
+		else:
+			d = _Address2PKH(addr)
+			if not d:
+				raise ValueError('invalid address')
+			(ver, pubkeyhash) = d
+			return b'\x76\xa9\x14' + pubkeyhash + b'\x88\xac'
 
 def countSigOps(s):
 	# FIXME: don't count data as ops

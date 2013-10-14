@@ -267,6 +267,10 @@ class StratumServer(networkserver.AsyncSocketServer):
 			self.logger.info('Coinbase small enough for stratum again: reenabling')
 		
 		txn = deepcopy(merkleTree.data[0])
+		try:
+			nVersion = merkleTree.MP['version']
+		except:
+			nVersion = 2
 		cb += self.extranonce1null + b'Eloi'
 		txn.setCoinbase(cb)
 		txn.assemble()
@@ -283,7 +287,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 				b2a_hex(txn.data[:pos - len(self.extranonce1null) - 4]).decode('ascii'),
 				b2a_hex(txn.data[pos:]).decode('ascii'),
 				steps,
-				'00000002',
+				format(nVersion, '08x'),
 				b2a_hex(bits[::-1]).decode('ascii'),
 				b2a_hex(struct.pack('>L', int(time()))).decode('ascii'),
 				not self.IsJobValid(self.JobId)

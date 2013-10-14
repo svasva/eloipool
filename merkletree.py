@@ -19,7 +19,7 @@ try:
 except ImportError:
 	class Txn:
 		pass
-from util import dblsha
+from util import dblsha, PoSCoin
 
 class MerkleTree:
 	def __init__(self, data, detailed=False):
@@ -67,6 +67,8 @@ class MerkleTree:
 
 # MerkleTree tests
 def _test():
+	if PoSCoin:
+		return
 	if not hasattr(bytes, 'fromhex'):
 		return
 	from binascii import b2a_hex

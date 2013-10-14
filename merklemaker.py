@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from binascii import b2a_hex
+from binascii import b2a_hex, unhexlify
 import bitcoin.script
 from bitcoin.script import countSigOps
 from bitcoin.txn import Txn
@@ -31,14 +31,16 @@ from struct import pack
 import threading
 from time import sleep, time
 import traceback
+from util import PoSCoin
 
 _makeCoinbase = [0, 0]
 _filecounter = 0
 
-def MakeBlockHeader(MRD):
+def MakeBlockHeader(MP, MRD):
 	(merkleRoot, merkleTree, coinbase, prevBlock, bits) = MRD[:5]
-	timestamp = pack('<L', int(time()))
-	hdr = b'\2\0\0\0' + prevBlock + merkleRoot + timestamp + bits + b'iolE'
+	timestamp = pack('<L', MP['curtime'])
+	nVersion = pack('<L', MP['version'])
+	hdr = nVersion + prevBlock + merkleRoot + timestamp + bits + b'iolE'
 	return hdr
 
 def assembleBlock(blkhdr, txlist):
@@ -46,6 +48,9 @@ def assembleBlock(blkhdr, txlist):
 	payload += varlenEncode(len(txlist))
 	for tx in txlist:
 		payload += tx.data
+	if PoSCoin:
+		# Add empty signature for PoS coins
+		payload += b'\x00'
 	return payload
 
 class merkleMaker(threading.Thread):
@@ -416,7 +421,7 @@ class merkleMaker(threading.Thread):
 		cbtxn.assemble()
 		merkleRoot = newMerkleTree.merkleRoot()
 		MRD = (merkleRoot, newMerkleTree, coinbase, prevBlock, bits)
-		blkhdr = MakeBlockHeader(MRD)
+		blkhdr = MakeBlockHeader(MP, MRD)
 		data = assembleBlock(blkhdr, txnlist)
 		ProposeReq = {
 			"mode": "proposal",

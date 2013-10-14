@@ -21,6 +21,10 @@ ServerName = 'Private Eloipool'
 # If dynamic targetting is enabled, this is a minimum
 ShareTarget = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
+# enable scrypt and/or PoS
+ScryptCoin = False
+PoSCoin = False
+
 # Automatically adjust targets per username
 # 0 = disabled
 # 1 = arbitrary targets

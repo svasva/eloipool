@@ -16,8 +16,9 @@
 
 import bitcoin.script
 from .varlen import varlenDecode, varlenEncode
-from util import dblsha
+from util import dblsha, PoSCoin
 from struct import pack, unpack
+from time import time
 
 _nullprev = b'\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0'
 
@@ -30,6 +31,8 @@ class Txn:
 	@classmethod
 	def new(cls):
 		o = cls()
+		if PoSCoin:
+			o.nTime = int(time())
 		o.version = 1
 		o.inputs = []
 		o.outputs = []
@@ -47,12 +50,22 @@ class Txn:
 	
 	def addOutput(self, amount, pkScript):
 		self.outputs.append( (amount, pkScript) )
-	
+
+	def setTime(self, time):
+		self.nTime = time
+
+	def setVersion(self, version):
+		self.version = version
+
 	def disassemble(self, retExtra = False):
 		self.version = unpack('<L', self.data[:4])[0]
-		rc = [4]
+		if PoSCoin:
+			self.nTime = unpack('<L', self.data[5:9])[0]
+			rc = [8]
+		else:
+			rc = [4]
 		
-		(inputCount, data) = varlenDecode(self.data[4:], rc)
+		(inputCount, data) = varlenDecode(self.data[rc[0]:], rc)
 		inputs = []
 		for i in range(inputCount):
 			prevout = (data[:32], unpack('<L', data[32:36])[0])
@@ -95,6 +108,8 @@ class Txn:
 	
 	def assemble(self):
 		data = pack('<L', self.version)
+		if PoSCoin:
+			data += pack('<L', self.nTime)
 		
 		inputs = self.inputs
 		data += varlenEncode(len(inputs))
@@ -119,6 +134,8 @@ class Txn:
 
 # Txn tests
 def _test():
+	if PoSCoin:
+		return True
 	d = b'\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 	t = Txn(d)
 	assert t.txid == b"C\xeczW\x9fUa\xa4*~\x967\xadAVg'5\xa6X\xbe'R\x18\x18\x01\xf7#\xba3\x16\xd2"
